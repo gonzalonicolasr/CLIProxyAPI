@@ -423,14 +423,17 @@ func (h *Handler) listAuthFilesFromDisk(c *gin.Context, pagination authFilesPagi
 		// Read file to get type field
 		full := filepath.Join(h.cfg.AuthDir, name)
 		if data, errRead := os.ReadFile(full); errRead == nil {
-			var fieldBuf [7]ojson.Result
-			fields := ojson.GetManyBytesNoCopy(fieldBuf[:0], data, "type", "email", "project_id", "priority", coreauth.AttributeWeight, "note", "websockets")
+			var fieldBuf [8]ojson.Result
+			fields := ojson.GetManyBytesNoCopy(fieldBuf[:0], data, "type", "email", "project_id", "priority", coreauth.AttributeWeight, "note", "websockets", "prefix")
 			typeValue := strings.Clone(fields[0].String())
 			emailValue := strings.Clone(fields[1].String())
 			fileData["type"] = typeValue
 			fileData["email"] = emailValue
 			if projectID := strings.TrimSpace(fields[2].String()); projectID != "" {
 				fileData["project_id"] = strings.Clone(projectID)
+			}
+			if prefix := strings.TrimSpace(fields[7].String()); prefix != "" {
+				fileData["prefix"] = strings.Clone(prefix)
 			}
 			if pv := fields[3]; pv.Exists() {
 				switch pv.Type {
@@ -710,6 +713,11 @@ func (h *Handler) buildAuthFileEntryLocked(auth *coreauth.Auth, quota authFileQu
 	}
 	if projectID := authProjectID(auth); projectID != "" {
 		entry["project_id"] = projectID
+	}
+	// Routing prefix, so the console can show which credential a prefixed
+	// request reaches without downloading the whole credential file.
+	if prefix := strings.TrimSpace(auth.Prefix); prefix != "" {
+		entry["prefix"] = prefix
 	}
 	if accountType, account := auth.AccountInfo(); accountType != "" || account != "" {
 		if accountType != "" {
