@@ -17,6 +17,7 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/credentialweight"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/watcher/synthesizer"
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
@@ -428,7 +429,7 @@ func (h *Handler) listAuthFilesFromDisk(c *gin.Context, pagination authFilesPagi
 			if projectID := strings.TrimSpace(gjson.GetBytes(data, "project_id").String()); projectID != "" {
 				fileData["project_id"] = projectID
 			}
-			if prefix := strings.TrimSpace(gjson.GetBytes(data, "prefix").String()); prefix != "" {
+			if prefix := synthesizer.NormalizeCredentialPrefix(gjson.GetBytes(data, "prefix").String()); prefix != "" {
 				fileData["prefix"] = prefix
 			}
 			if pv := gjson.GetBytes(data, "priority"); pv.Exists() {
