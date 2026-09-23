@@ -20,8 +20,12 @@ import (
 )
 
 const (
-	defaultClaudeFingerprintUserAgent      = "claude-cli/2.1.258 (external, cli)"
-	defaultClaudeFingerprintPackageVersion = "0.112.1"
+	// Anthropic gatea modelos nuevos por versión declarada del cliente: con 2.1.258
+	// claude-opus-5-5 responde "does not support this model; version 2.1.280 or newer
+	// is required". 2.1.280 es la versión REAL publicada de @anthropic-ai/claude-code
+	// (verificada en npm), no un número inventado.
+	defaultClaudeFingerprintUserAgent      = "claude-cli/2.1.280 (external, cli)"
+	defaultClaudeFingerprintPackageVersion = "0.128.0"
 	defaultClaudeFingerprintRuntimeVersion = "v26.3.0"
 	defaultClaudeFingerprintOS             = "MacOS"
 	defaultClaudeFingerprintArch           = "arm64"
