@@ -167,7 +167,7 @@ func (e *OpenAICompatExecutor) executeWithCredentials(ctx context.Context, auth 
 	requestedModel := helps.PayloadRequestedModel(opts, req.Model)
 	requestPath := helps.PayloadRequestPath(opts)
 	if helps.ShouldNormalizeOpenAIToolResultsForModel(compat, baseModel, requestedModel) {
-		helps.NormalizeOpenAIToolResultsTextOnlyDoc(doc)
+		e.stripImagesForTextOnlyModelDoc(ctx, compat, doc)
 	}
 	if opts.Alt != "responses/compact" {
 		useMCT := helps.ShouldUseMaxCompletionTokensForModel(compat, baseModel, requestedModel)
@@ -408,7 +408,7 @@ func (e *OpenAICompatExecutor) executeStreamWithCredentials(ctx context.Context,
 	requestedModel := helps.PayloadRequestedModel(opts, req.Model)
 	requestPath := helps.PayloadRequestPath(opts)
 	if helps.ShouldNormalizeOpenAIToolResultsForModel(compat, baseModel, requestedModel) {
-		helps.NormalizeOpenAIToolResultsTextOnlyDoc(doc)
+		e.stripImagesForTextOnlyModelDoc(ctx, compat, doc)
 	}
 	if opts.Alt != "responses/compact" {
 		useMCT := helps.ShouldUseMaxCompletionTokensForModel(compat, baseModel, requestedModel)
@@ -1132,6 +1132,17 @@ func (e *OpenAICompatExecutor) applyPromptCacheKeyWithCompatDoc(ctx context.Cont
 	promptCacheKey := uuid.NewSHA1(uuid.NameSpaceOID, []byte(identity)).String()
 	helps.SetStringIfDifferentDoc(doc, "prompt_cache_key", promptCacheKey)
 	return nil
+}
+
+// stripImagesForTextOnlyModelDoc leaves no image part for a model whose input-modalities exclude
+// images: they become text described by the provider's vision-fallback-model when configured,
+// or a placeholder otherwise, so a single image in the history never makes every turn fail.
+func (e *OpenAICompatExecutor) stripImagesForTextOnlyModelDoc(ctx context.Context, compat *config.OpenAICompatibility, doc *ojson.Doc) {
+	if describe := helps.NewLoopbackImageDescriber(e.cfg, compat.VisionFallbackModel); describe != nil {
+		helps.ReplaceOpenAIImagesWithTextDoc(ctx, doc, describe)
+	}
+	helps.NormalizeOpenAIToolResultsTextOnlyDoc(doc)
+	helps.ReplaceOpenAIImagesWithTextDoc(ctx, doc, nil)
 }
 
 func (e *OpenAICompatExecutor) resolveCredentials(auth *cliproxyauth.Auth) (baseURL, apiKey string) {
