@@ -3,6 +3,7 @@ package helps
 import (
 	"context"
 	"errors"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -110,5 +111,18 @@ func TestReplaceOpenAIImagesWithText_NoImagesUntouched(t *testing.T) {
 	}
 	if doc.String() != payload {
 		t.Fatalf("payload changed: %s", doc.String())
+	}
+}
+
+func TestReplaceOpenAIImagesWithText_ManyImagesConcurrently(t *testing.T) {
+	var parts []string
+	for i := 0; i < 300; i++ {
+		parts = append(parts, `{"type":"image_url","image_url":{"url":"data:image/png;base64,`+strconv.Itoa(i)+`"}}`)
+	}
+	doc := ojson.NewDocString(`{"messages":[{"role":"user","content":[` + strings.Join(parts, ",") + `]}]}`)
+	var calls int32
+	replaceOpenAIImagesWithText(context.Background(), doc, countingDescriber(&calls, "captura", nil), newImageDescriptionCache())
+	if strings.Contains(doc.String(), "image_url") {
+		t.Fatalf("image part survived: %s", doc.String())
 	}
 }

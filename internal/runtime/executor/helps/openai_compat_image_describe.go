@@ -148,14 +148,13 @@ func replaceOpenAIImagesWithText(ctx context.Context, doc *ojson.Doc, describe I
 	if describe != nil {
 		var mu sync.Mutex
 		var wg sync.WaitGroup
+		// Dedupe in a set of its own: described is written by the goroutines.
+		queued := make(map[string]bool)
 		for _, part := range parts {
-			if part.url == "" {
+			if part.url == "" || queued[part.url] {
 				continue
 			}
-			if _, seen := described[part.url]; seen {
-				continue
-			}
-			described[part.url] = TextOnlyImageOmittedText
+			queued[part.url] = true
 			wg.Add(1)
 			go func(url string) {
 				defer wg.Done()
